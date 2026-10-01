@@ -44,7 +44,8 @@ class LeadPipeline:
             category=params.category,
             keyword=params.keyword,
             max_results=params.limit,
-            progress_callback=progress_callback
+            progress_callback=progress_callback,
+            location_name=f"{params.area}, {params.city}, {params.country}"
         )
 
         total_raw_found = len(raw_leads)

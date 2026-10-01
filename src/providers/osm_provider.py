@@ -24,7 +24,8 @@ class OpenStreetMapProvider(BusinessDataProvider):
         self,
         bbox: GeoBoundingBox,
         category: str,
-        keyword: Optional[str] = None
+        keyword: Optional[str] = None,
+        max_results: int = 50
     ) -> str:
         """Constructs an optimized Overpass QL query string."""
         tags = get_osm_tags_for_category(category)
@@ -42,11 +43,12 @@ class OpenStreetMapProvider(BusinessDataProvider):
             query_blocks.append(f'way["name"~"{kw_clean}", i]({bbox_str});')
 
         joined_blocks = "\n  ".join(query_blocks)
+        max_fetch = min(max(max_results * 3, 60), 150)
         return f"""[out:json][timeout:{OVERPASS_TIMEOUT}];
 (
   {joined_blocks}
 );
-out center tags;"""
+out center tags {max_fetch};"""
 
     def search(
         self,
@@ -54,9 +56,11 @@ out center tags;"""
         category: str,
         keyword: Optional[str] = None,
         max_results: int = 50,
-        progress_callback: Optional[Callable[[int, str], None]] = None
+        progress_callback: Optional[Callable[[int, str], None]] = None,
+        location_name: Optional[str] = None,
+        **kwargs
     ) -> List[Lead]:
-        query = self._build_overpass_query(bbox, category, keyword)
+        query = self._build_overpass_query(bbox, category, keyword, max_results)
         headers = {
             "User-Agent": APP_USER_AGENT,
             "Accept": "application/json"
@@ -82,9 +86,13 @@ out center tags;"""
                 )
 
                 if response.status_code == 200:
-                    data = response.json()
-                    break
-                elif response.status_code in (429, 504):
+                    try:
+                        data = response.json()
+                        if data and "elements" in data and len(data["elements"]) > 0:
+                            break
+                    except Exception:
+                        pass
+                elif response.status_code in (429, 502, 503, 504):
                     # Rate limit or gateway timeout on this mirror, try next
                     last_error = f"Server {server_url} returned status {response.status_code}"
                     continue

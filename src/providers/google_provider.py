@@ -27,7 +27,9 @@ class GooglePlacesProvider(BusinessDataProvider):
         category: str,
         keyword: Optional[str] = None,
         max_results: int = 50,
-        progress_callback: Optional[Callable[[int, str], None]] = None
+        progress_callback: Optional[Callable[[int, str], None]] = None,
+        location_name: Optional[str] = None,
+        **kwargs
     ) -> List[Lead]:
         if not self.api_key:
             raise ValueError("Google Places API Key is missing. Please configure it in settings.")

@@ -27,10 +27,12 @@ class BusinessDataProvider(ABC):
         category: str,
         keyword: Optional[str] = None,
         max_results: int = 50,
-        progress_callback: Optional[Callable[[int, str], None]] = None
+        progress_callback: Optional[Callable[[int, str], None]] = None,
+        location_name: Optional[str] = None,
+        **kwargs
     ) -> List[Lead]:
         """
-        Executes business search within geographic bounding box.
+        Executes business search within geographic bounding box or location.
         Returns a list of raw or semi-normalized Lead objects.
         """
         pass

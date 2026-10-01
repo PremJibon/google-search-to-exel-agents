@@ -45,8 +45,9 @@ flowchart TD
 | :--- | :--- | :--- | :--- | :--- |
 | **Language** | Python 3.11 - 3.14 | TypeScript / Node.js | Fast data processing, pandas, xlsxwriter, rich ecosystem | **$0** (FOSS) |
 | **User Interface** | Streamlit | Next.js + React | Zero boilerplate, native live progress reporting, built-in data editor/table, direct memory-buffered downloads | **$0** (FOSS) |
-| **Primary Data Source** | OpenStreetMap (Overpass + Nominatim) | Direct Google Scraping | Legal, stable, unmetered, no credit card or API key required | **$0** (FOSS) |
-| **Optional Data Source** | Google Places API (New) | Serper / SerpApi | Official API only if user brings own key; no third-party paid scraping proxies | **$0** (Pay-as-you-go if key provided) |
+| **Primary Free Source** | OpenStreetMap (Overpass + Nominatim) | Direct Google Scraping | Legal, stable, unmetered, no credit card or API key required | **$0** (FOSS) |
+| **Google Maps Source** | Serper API (Google Maps & Places) | Google Cloud Places API | 2,500 free queries, no credit card required, verified Google phone numbers | **$0** (Free Tier) |
+| **Optional Data Source** | Google Places API (New) | Direct Scraping | Official GCP API if user brings billing-enabled key | **$0** (Pay-as-you-go) |
 | **Data Processing** | Python `pandas` & regex | Custom JS arrays | Vectorized deduplication, fast phone and string cleaning | **$0** (FOSS) |
 | **Spreadsheet Engine**| `xlsxwriter` / `openpyxl` | SheetJS | High performance Excel generation with cell styling, auto-width, frozen headers | **$0** (FOSS) |
 | **Deployment Target** | Render Free Tier (Web Service / Docker) / Streamlit Cloud | Vercel / AWS | Native free hosting tier, no credit card required on Streamlit Cloud, straightforward on Render | **$0** |
@@ -92,10 +93,14 @@ class BusinessDataProvider(ABC):
 - **Pros**: Completely free, unlimited public usage within fair use, no account required.
 - **Cons**: Phone numbers and websites are volunteer-contributed; coverage is rich in dense urban areas and sparse in rural regions.
 
-### 3.2. Provider 2: Google Places API (New) [Optional Extension]
-- Only activated when the user inputs `GOOGLE_MAPS_API_KEY` in `.env` or settings.
-- Uses `places:searchText` endpoint with FieldMask (`places.displayName,places.formattedAddress,places.nationalPhoneNumber,places.websiteUri,places.googleMapsUri,places.rating`).
-- **Safety Guard**: App alerts the user before executing Google calls and shows estimated usage count to prevent quota accidents.
+### 3.2. Provider 2: Google Maps via Serper API [Free Tier - 2,500 Queries, No Credit Card]
+- Activated when user inputs `SERPER_API_KEY` in `.env` or sidebar settings.
+- Directly retrieves official Google Maps business listings via `https://google.serper.dev/maps`.
+- Extracts: Business Name, Google Phone Number, Address, Website, Maps Link (CID), Rating, and Category.
+- **Pros**: Delivers real-time Google Maps search data without requiring Google Cloud Console setup or credit card billing.
+
+### 3.3. Provider 3: Google Cloud Places API [Optional Enterprise Extension]
+- Uses official GCP `places:searchText` endpoint when billing-enabled `GOOGLE_MAPS_API_KEY` is provided.
 
 ---
 

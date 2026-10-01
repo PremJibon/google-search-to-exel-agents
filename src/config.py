@@ -13,16 +13,35 @@ APP_USER_AGENT = os.getenv("APP_USER_AGENT", "LeadFinderFree/1.0 (contact: githu
 
 # Overpass API Public Endpoints (with fallback rotation)
 OVERPASS_SERVERS = [
-    os.getenv("OVERPASS_API_URL", "https://overpass-api.de/api/interpreter"),
-    "https://lz4.overpass-api.de/api/interpreter",
-    "https://overpass.kumi.systems/api/interpreter"
+    os.getenv("OVERPASS_API_URL", "https://lz4.overpass-api.de/api/interpreter"),
+    "https://overpass-api.de/api/interpreter",
+    "https://maps.mail.ru/osm/tools/overpass/api/interpreter"
 ]
 
 # Request Timeouts & Limits
-GEOCODE_TIMEOUT = 10
-OVERPASS_TIMEOUT = 30
+GEOCODE_TIMEOUT = 8
+OVERPASS_TIMEOUT = 12
 MAX_RESULTS_LIMIT = 200
 DEFAULT_RESULTS_LIMIT = 50
 
-# Optional Google Places Key
+# Google Maps via Serper API Key (2,500 free queries, no credit card required)
+SERPER_API_KEY = os.getenv("SERPER_API_KEY", "").strip()
+
+# Optional Google Cloud Places Key (requires billing/credit card)
 GOOGLE_MAPS_API_KEY = os.getenv("GOOGLE_MAPS_API_KEY", "").strip()
+
+# Tavily Search API Key
+TAVILY_API_KEY = os.getenv("TAVILY_API_KEY", "").strip()
+
+# OpenRouter Free LLM API Key
+OPENROUTER_API_KEY = os.getenv("OPENROUTER_API_KEY", "").strip()
+
+# Recommended Free Models on OpenRouter
+OPENROUTER_FREE_MODELS = [
+    "google/gemini-2.0-flash-exp:free",
+    "meta-llama/llama-3.3-70b-instruct:free",
+    "qwen/qwen-2.5-coder-32b-instruct:free",
+    "deepseek/deepseek-r1:free",
+    "mistralai/mistral-7b-instruct:free"
+]
+OPENROUTER_DEFAULT_MODEL = "google/gemini-2.0-flash-exp:free"

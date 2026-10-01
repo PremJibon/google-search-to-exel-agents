@@ -1,10 +1,11 @@
 import streamlit as st
 import pandas as pd
 from datetime import datetime
-from src.config import APP_NAME, VERSION, GOOGLE_MAPS_API_KEY
+from src.config import APP_NAME, VERSION, GOOGLE_MAPS_API_KEY, SERPER_API_KEY, TAVILY_API_KEY, OPENROUTER_API_KEY
 from src.models import SearchParams
 from src.pipelines.lead_pipeline import LeadPipeline
 from src.providers.osm_provider import OpenStreetMapProvider
+from src.providers.serper_provider import SerperGoogleMapsProvider
 from src.providers.google_provider import GooglePlacesProvider
 from src.services.exporter import export_to_excel, export_to_csv, create_safe_filename
 from src.ui.components import inject_custom_styles, render_metric_cards, leads_to_dataframe
@@ -31,13 +32,29 @@ with st.sidebar:
     
     provider_choice = st.radio(
         "Active Data Provider",
-        options=["OpenStreetMap (100% Free)", "Google Places API (Optional)"],
-        index=0,
-        help="OpenStreetMap is 100% free and requires no API key or credit card."
+        options=[
+            "Google Maps via Serper (2,500 Free)",
+            "OpenStreetMap (100% Free - Keyless)",
+            "Google Cloud Places API (Optional)"
+        ],
+        index=0 if SERPER_API_KEY else 1,
+        help="Google Maps via Serper delivers verified Google phone numbers and addresses. OpenStreetMap is 100% free with no key required."
     )
 
+    serper_api_key = ""
     google_api_key = ""
-    if "Google Places" in provider_choice:
+
+    if "Serper" in provider_choice:
+        serper_api_key = st.text_input(
+            "Serper API Key",
+            value=SERPER_API_KEY,
+            type="password",
+            help="Get 2,500 free Google Maps searches at https://serper.dev (no credit card required)."
+        )
+        if not serper_api_key:
+            st.info("💡 Enter your free Serper API key to query Google Maps directly, or select OpenStreetMap below.")
+
+    elif "Google Cloud" in provider_choice:
         google_api_key = st.text_input(
             "Google Places API Key",
             value=GOOGLE_MAPS_API_KEY,
@@ -45,13 +62,13 @@ with st.sidebar:
             help="Enter your official Google Cloud API key with Places API (New) enabled."
         )
         if not google_api_key:
-            st.warning("⚠️ API Key required for Google Places. Defaulting to OpenStreetMap if empty.")
+            st.warning("⚠️ API Key required for Google Cloud Places. Defaulting to OpenStreetMap if empty.")
 
     st.markdown("---")
     st.subheader("🔍 Web Intelligence (Optional)")
     tavily_key = st.text_input(
         "Tavily Search API Key",
-        value="",
+        value=TAVILY_API_KEY,
         type="password",
         help="Optional: Free tier offers 1,000 searches/mo. Used to verify websites and search web footprints."
     )
@@ -118,7 +135,9 @@ if submit_button:
         st.error("Please fill in Country, City, Area, and Business Category before searching.")
     else:
         # Determine active provider
-        if "Google Places" in provider_choice and google_api_key.strip():
+        if "Serper" in provider_choice and serper_api_key.strip():
+            selected_provider = SerperGoogleMapsProvider(api_key=serper_api_key.strip())
+        elif "Google Cloud" in provider_choice and google_api_key.strip():
             selected_provider = GooglePlacesProvider(api_key=google_api_key.strip())
         else:
             selected_provider = OpenStreetMapProvider()
