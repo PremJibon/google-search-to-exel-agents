@@ -46,9 +46,9 @@ def inject_custom_styles():
         </style>
     """, unsafe_allow_html=True)
 
-def render_metric_cards(total_found: int, filtered_count: int, phone_count: int, duration: float):
-    """Renders 4 responsive summary metric cards."""
-    col1, col2, col3, col4 = st.columns(4)
+def render_metric_cards(total_found: int, filtered_count: int, phone_count: int, high_opp_count: int, duration: float):
+    """Renders 5 responsive summary metric cards."""
+    col1, col2, col3, col4, col5 = st.columns(5)
     with col1:
         st.markdown(f"""
             <div class="metric-card">
@@ -66,15 +66,22 @@ def render_metric_cards(total_found: int, filtered_count: int, phone_count: int,
     with col3:
         st.markdown(f"""
             <div class="metric-card">
-                <div class="metric-value">{phone_count}</div>
-                <div class="metric-label">With Phone Numbers</div>
+                <div class="metric-value" style="color: #10B981;">{high_opp_count}</div>
+                <div class="metric-label">High Opportunities</div>
             </div>
         """, unsafe_allow_html=True)
     with col4:
         st.markdown(f"""
             <div class="metric-card">
+                <div class="metric-value">{phone_count}</div>
+                <div class="metric-label">With Phone</div>
+            </div>
+        """, unsafe_allow_html=True)
+    with col5:
+        st.markdown(f"""
+            <div class="metric-card">
                 <div class="metric-value">{duration}s</div>
-                <div class="metric-label">Search Duration</div>
+                <div class="metric-label">Duration</div>
             </div>
         """, unsafe_allow_html=True)
 

@@ -30,6 +30,7 @@ class SearchParams:
     limit: int = 50
     require_phone: bool = False
     require_website: bool = False
+    agency_goal: str = "Website Development"  # "Website Development", "AI Automation / Chatbots", "General Lead Generation"
 
 @dataclass
 class Lead:
@@ -45,6 +46,12 @@ class Lead:
     lon: Optional[float] = None
     raw_id: str = ""
     tags: Dict[str, Any] = field(default_factory=dict)
+    
+    # Agency Qualification Fields (Agent 2)
+    lead_score: str = "MEDIUM"        # HIGH, MEDIUM, LOW
+    opportunity_type: str = ""        # e.g. "No Website", "Social Only Website", "High-Volume Booking Need"
+    suggested_service: str = ""       # e.g. "Custom Website Design", "AI Receptionist / Chatbot"
+    pitch_angle: str = ""             # e.g. "Pitch a responsive website with online ordering"
 
     def to_export_dict(self) -> Dict[str, str]:
         return {
@@ -52,6 +59,10 @@ class Lead:
             "Phone": self.phone,
             "Address": self.address,
             "Website": self.website,
+            "Lead Score": self.lead_score,
+            "Opportunity": self.opportunity_type,
+            "Suggested Service": self.suggested_service,
+            "Pitch Angle": self.pitch_angle,
             "Maps Link": self.maps_link,
             "Category": self.category,
             "Source": self.source

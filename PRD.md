@@ -2,18 +2,26 @@
 ## Local Business Lead Generation Agent ("LeadFinder Free")
 
 ### 1. Executive Summary & Core Objective
-The **Local Business Lead Finder** is a lightweight, 100% free web application and AI agent designed to discover local businesses, collect publicly available business contact information (Name, Phone, Address, Website, Maps URL, Category), clean and deduplicate the data, and export it into clean Excel (`.xlsx`) and `.csv` files for sales outreach and prospecting.
+The **Local Business Lead Finder & Agency Qualifier** is a lightweight, free-first web application powered by a **Two-Agent System**:
+1. **Discovery Agent (Scouter)**: Discovers local businesses in the target area (OpenStreetMap, Tavily Search API, or Google Maps) and extracts Name, Phone, Address, Website, and Maps Link.
+2. **Qualification & Audit Agent (Auditor)**: Audits the discovered leads against specific agency service criteria—such as **Selling Websites** (detecting missing/broken websites) or **Selling AI Automation & Chatbots** (evaluating inquiry volume, appointment booking needs, and digital readiness)—assigning a Lead Opportunity Score and a tailored outreach pitch angle.
 
 **Primary Flow:**
-`Location (Country, City, Area) + Business Category` ➔ `Data Provider Query` ➔ `Lead Extraction` ➔ `Normalization & Deduplication` ➔ `Live UI Results Table` ➔ `Download XLSX / CSV`
+`Location + Category + Agency Target Mode (Websites / AI Automation / General)` ➔ `Agent 1: Discovery` ➔ `Agent 2: Qualification Audit` ➔ `Live UI Table + Map` ➔ `Excel (XLSX) / CSV Export with Outreach Angles`
 
 ---
 
-### 2. Absolute Cost & Free-First Constraint ($0/Month)
-- **Hard Rule**: The application must run locally and be deployable to cloud hosting at **$0/month** without requiring credit cards or paid subscriptions.
-- **No Hidden Billing**: No paid APIs, paid proxies, CAPTCHA bypass services, or paid cloud databases are allowed.
-- **Provider Abstraction**: OpenStreetMap (Overpass API + Nominatim Geocoding) serves as the primary 100% free, unmetered, keyless provider. Google Places API (New) is supported strictly as an **optional** plug-in provider if the user provides their own API key in the UI settings or `.env`.
-- **Zero Fabrication**: Under no circumstances will missing data (e.g. missing phone number or website) be hallucinated or fabricated. Missing fields are kept clean and empty.
+### 2. Agency Lead Target Modes
+- **Mode 1: Website Design & Development Clients**
+  - Targets businesses that have **NO website**, or only link to a basic Facebook/Instagram page, or have unencrypted HTTP links.
+  - Generates pitch angle: *"High-priority prospect: No official website. Pitch modern responsive website & local SEO."*
+- **Mode 2: AI Automation & Chatbot Clients**
+  - Targets high-inquiry businesses (e.g. dental clinics, gyms, salons, car repair, restaurants) that handle repetitive phone calls and appointments.
+  - Generates pitch angle: *"Prime candidate for 24/7 AI receptionist, appointment booking bot, and WhatsApp auto-responder."*
+- **Mode 3: Local SEO & Google Business Profile Optimization**
+  - Targets businesses with missing contact details, unverified listings, or incomplete web presence.
+- **Mode 4: General B2B Prospecting**
+  - Focuses on businesses with verified phone numbers for direct cold-calling and sales outreach.
 
 ---
 

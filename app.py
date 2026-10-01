@@ -48,6 +48,15 @@ with st.sidebar:
             st.warning("⚠️ API Key required for Google Places. Defaulting to OpenStreetMap if empty.")
 
     st.markdown("---")
+    st.subheader("🔍 Web Intelligence (Optional)")
+    tavily_key = st.text_input(
+        "Tavily Search API Key",
+        value="",
+        type="password",
+        help="Optional: Free tier offers 1,000 searches/mo. Used to verify websites and search web footprints."
+    )
+
+    st.markdown("---")
     st.markdown("### 📋 Responsible Use Notice")
     st.caption(
         "This tool extracts publicly available business information for legitimate B2B prospecting. "
@@ -59,12 +68,26 @@ with st.sidebar:
 # Main Interface
 st.markdown(f'<div class="main-header">📍 {APP_NAME}</div>', unsafe_allow_html=True)
 st.markdown(
-    '<div class="sub-header">Discover local business leads, phone numbers, and addresses with 100% free open data.</div>',
+    '<div class="sub-header">Discover local business leads, audit digital presence, and generate custom agency sales pitches.</div>',
     unsafe_allow_html=True
 )
 
 # Search Input Form
 with st.form(key="search_form"):
+    st.markdown("##### 1. Your Agency Target Goal")
+    agency_goal = st.selectbox(
+        "What services do you want to offer to these businesses?",
+        options=[
+            "Website Development",
+            "AI Automation / Chatbots",
+            "Local SEO / Google Maps",
+            "General B2B Outreach"
+        ],
+        index=0,
+        help="Agent 2 will audit each lead and prepare custom sales angles based on your agency service."
+    )
+
+    st.markdown("##### 2. Target Location & Category")
     col1, col2, col3 = st.columns(3)
     with col1:
         country = st.text_input("Country", value="India", placeholder="e.g. India, Bangladesh, USA")
@@ -87,7 +110,7 @@ with st.form(key="search_form"):
     with col8:
         require_website = st.checkbox("Require Website", value=False)
 
-    submit_button = st.form_submit_button("🚀 Find Local Businesses", use_container_width=True)
+    submit_button = st.form_submit_button("🚀 Launch 2-Agent Lead & Audit Search", use_container_width=True)
 
 # Search Execution
 if submit_button:
@@ -109,7 +132,8 @@ if submit_button:
             keyword=keyword.strip() if keyword.strip() else None,
             limit=int(max_results),
             require_phone=require_phone,
-            require_website=require_website
+            require_website=require_website,
+            agency_goal=agency_goal
         )
 
         progress_container = st.empty()
@@ -120,14 +144,14 @@ if submit_button:
             status_container.info(f"⏳ **Step**: {message}")
 
         try:
-            with st.spinner("Finding leads..."):
+            with st.spinner("Executing discovery & qualification pipeline..."):
                 result = pipeline.run(params, progress_callback=on_progress)
                 st.session_state.search_result = result
                 st.session_state.current_params = params
 
             progress_container.empty()
             status_container.empty()
-            st.success(f"✅ Found {len(result.leads)} matching leads in {result.duration_seconds}s!")
+            st.success(f"✅ Found & audited {len(result.leads)} leads in {result.duration_seconds}s!")
 
         except Exception as e:
             progress_container.empty()
@@ -140,7 +164,8 @@ if st.session_state.search_result:
     params = st.session_state.current_params
 
     st.markdown("---")
-    st.subheader(f"📊 Search Results for '{params.category}' in {params.area}, {params.city}")
+    st.subheader(f"📊 Qualified Leads for '{params.category}' in {params.area}, {params.city}")
+    st.caption(f"🎯 Target Agency Goal: **{params.agency_goal}**")
 
     # Display warning/guidance if any
     if res.warning_message:
@@ -148,28 +173,44 @@ if st.session_state.search_result:
 
     # Metrics
     phone_count = sum(1 for lead in res.leads if lead.phone)
+    high_opp_count = sum(1 for lead in res.leads if lead.lead_score == "HIGH")
     render_metric_cards(
         total_found=res.total_found,
         filtered_count=res.filtered_count,
         phone_count=phone_count,
+        high_opp_count=high_opp_count,
         duration=res.duration_seconds
     )
 
     st.write("")
 
     if res.leads:
-        df = leads_to_dataframe(res.leads)
-
-        tab1, tab2 = st.tabs(["📋 Lead Table & Export", "🗺️ Geographic Map Preview"])
+        tab1, tab2 = st.tabs(["📋 Qualified Leads & Export", "🗺️ Geographic Map Preview"])
 
         with tab1:
-            # Action bar & Export buttons
-            excel_data = export_to_excel(res.leads)
-            csv_data = export_to_csv(res.leads)
-            excel_filename = create_safe_filename(params.category, params.area, params.city, "xlsx")
-            csv_filename = create_safe_filename(params.category, params.area, params.city, "csv")
+            col_filter, col_dl1, col_dl2 = st.columns([2, 1.5, 1.5])
+            with col_filter:
+                score_filter = st.selectbox(
+                    "Filter by Opportunity Score:",
+                    options=["All Leads", "HIGH Priority Only", "MEDIUM & HIGH Only"]
+                )
 
-            col_dl1, col_dl2, col_space = st.columns([1.5, 1.5, 3])
+            # Filter data based on selection
+            if score_filter == "HIGH Priority Only":
+                display_leads = [l for l in res.leads if l.lead_score == "HIGH"]
+            elif score_filter == "MEDIUM & HIGH Only":
+                display_leads = [l for l in res.leads if l.lead_score in ("HIGH", "MEDIUM")]
+            else:
+                display_leads = res.leads
+
+            df = leads_to_dataframe(display_leads)
+
+            # Export data based on displayed leads
+            excel_data = export_to_excel(display_leads)
+            csv_data = export_to_csv(display_leads)
+            excel_filename = create_safe_filename(f"{params.category}_{params.agency_goal}", params.area, params.city, "xlsx")
+            csv_filename = create_safe_filename(f"{params.category}_{params.agency_goal}", params.area, params.city, "csv")
+
             with col_dl1:
                 st.download_button(
                     label="📥 Download Excel (.xlsx)",
@@ -193,8 +234,12 @@ if st.session_state.search_result:
                 use_container_width=True,
                 column_config={
                     "Business Name": st.column_config.TextColumn(width="medium"),
+                    "Lead Score": st.column_config.TextColumn(width="small"),
+                    "Opportunity": st.column_config.TextColumn(width="medium"),
+                    "Suggested Service": st.column_config.TextColumn(width="medium"),
+                    "Pitch Angle": st.column_config.TextColumn(width="large"),
                     "Phone": st.column_config.TextColumn(width="small"),
-                    "Address": st.column_config.TextColumn(width="large"),
+                    "Address": st.column_config.TextColumn(width="medium"),
                     "Website": st.column_config.LinkColumn(width="medium"),
                     "Maps Link": st.column_config.LinkColumn(width="small"),
                     "Category": st.column_config.TextColumn(width="small"),
@@ -207,7 +252,7 @@ if st.session_state.search_result:
             # Map preview for leads with valid coordinates
             map_data = [
                 {"lat": lead.lat, "lon": lead.lon, "name": lead.business_name}
-                for lead in res.leads
+                for lead in display_leads
                 if lead.lat is not None and lead.lon is not None
             ]
             if map_data:

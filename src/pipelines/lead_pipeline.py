@@ -49,11 +49,11 @@ class LeadPipeline:
         total_raw_found = len(raw_leads)
 
         # 3. Deduplication
-        update(75, f"Deduplicating {total_raw_found} discovered records...")
+        update(70, f"[Agent 1: Discovery] Deduplicating {total_raw_found} discovered records...")
         unique_leads = deduplicate_leads(raw_leads)
 
         # 4. Strict Filtering
-        update(90, "Applying contact filters and finalizing list...")
+        update(80, "[Agent 1: Discovery] Applying contact filters...")
         filtered_leads = []
         for lead in unique_leads:
             if params.require_phone and not lead.phone:
@@ -63,6 +63,11 @@ class LeadPipeline:
             filtered_leads.append(lead)
             if len(filtered_leads) >= params.limit:
                 break
+
+        # 5. Agent 2: Agency Qualification & Opportunity Audit
+        update(90, f"[Agent 2: Auditor] Auditing leads for '{params.agency_goal}' opportunities & pitch angles...")
+        from src.services.agency_qualifier import qualify_leads_batch
+        qualify_leads_batch(filtered_leads, params.agency_goal)
 
         # 5. Warning / Guidance Checks
         warning_msg = None
