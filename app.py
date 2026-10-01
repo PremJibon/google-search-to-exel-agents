@@ -160,44 +160,61 @@ if st.session_state.search_result:
     if res.leads:
         df = leads_to_dataframe(res.leads)
 
-        # Action bar & Export buttons
-        excel_data = export_to_excel(res.leads)
-        csv_data = export_to_csv(res.leads)
-        excel_filename = create_safe_filename(params.category, params.area, params.city, "xlsx")
-        csv_filename = create_safe_filename(params.category, params.area, params.city, "csv")
+        tab1, tab2 = st.tabs(["📋 Lead Table & Export", "🗺️ Geographic Map Preview"])
 
-        col_dl1, col_dl2, col_space = st.columns([1.5, 1.5, 3])
-        with col_dl1:
-            st.download_button(
-                label="📥 Download Excel (.xlsx)",
-                data=excel_data,
-                file_name=excel_filename,
-                mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-                use_container_width=True
-            )
-        with col_dl2:
-            st.download_button(
-                label="📥 Download CSV (.csv)",
-                data=csv_data,
-                file_name=csv_filename,
-                mime="text/csv",
-                use_container_width=True
+        with tab1:
+            # Action bar & Export buttons
+            excel_data = export_to_excel(res.leads)
+            csv_data = export_to_csv(res.leads)
+            excel_filename = create_safe_filename(params.category, params.area, params.city, "xlsx")
+            csv_filename = create_safe_filename(params.category, params.area, params.city, "csv")
+
+            col_dl1, col_dl2, col_space = st.columns([1.5, 1.5, 3])
+            with col_dl1:
+                st.download_button(
+                    label="📥 Download Excel (.xlsx)",
+                    data=excel_data,
+                    file_name=excel_filename,
+                    mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+                    use_container_width=True
+                )
+            with col_dl2:
+                st.download_button(
+                    label="📥 Download CSV (.csv)",
+                    data=csv_data,
+                    file_name=csv_filename,
+                    mime="text/csv",
+                    use_container_width=True
+                )
+
+            # Interactive Table with column configuration
+            st.dataframe(
+                df,
+                use_container_width=True,
+                column_config={
+                    "Business Name": st.column_config.TextColumn(width="medium"),
+                    "Phone": st.column_config.TextColumn(width="small"),
+                    "Address": st.column_config.TextColumn(width="large"),
+                    "Website": st.column_config.LinkColumn(width="medium"),
+                    "Maps Link": st.column_config.LinkColumn(width="small"),
+                    "Category": st.column_config.TextColumn(width="small"),
+                    "Source": st.column_config.TextColumn(width="small")
+                },
+                hide_index=True
             )
 
-        # Interactive Table with column configuration
-        st.dataframe(
-            df,
-            use_container_width=True,
-            column_config={
-                "Business Name": st.column_config.TextColumn(width="medium"),
-                "Phone": st.column_config.TextColumn(width="small"),
-                "Address": st.column_config.TextColumn(width="large"),
-                "Website": st.column_config.LinkColumn(width="medium"),
-                "Maps Link": st.column_config.LinkColumn(width="small"),
-                "Category": st.column_config.TextColumn(width="small"),
-                "Source": st.column_config.TextColumn(width="small")
-            },
-            hide_index=True
-        )
+        with tab2:
+            # Map preview for leads with valid coordinates
+            map_data = [
+                {"lat": lead.lat, "lon": lead.lon, "name": lead.business_name}
+                for lead in res.leads
+                if lead.lat is not None and lead.lon is not None
+            ]
+            if map_data:
+                map_df = pd.DataFrame(map_data)
+                st.map(map_df, latitude="lat", longitude="lon", size=20, zoom=13)
+                st.caption(f"Showing {len(map_df)} geolocated business leads on map.")
+            else:
+                st.info("No geographic coordinates available for the current leads.")
     else:
         st.info("No leads available to display. Try broadening your location or category filters.")
