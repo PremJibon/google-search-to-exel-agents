@@ -123,7 +123,7 @@ if submit_button:
         else:
             selected_provider = OpenStreetMapProvider()
 
-        pipeline = LeadPipeline(provider=selected_provider)
+        pipeline = LeadPipeline(provider=selected_provider, tavily_key=tavily_key.strip())
         params = SearchParams(
             country=country.strip(),
             city=city.strip(),

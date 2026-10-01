@@ -12,8 +12,9 @@ class LeadPipeline:
     Input Validation -> Geocoding -> POI Querying -> Normalization -> Deduplication -> Filtering -> Result Set.
     """
 
-    def __init__(self, provider: Optional[BusinessDataProvider] = None):
+    def __init__(self, provider: Optional[BusinessDataProvider] = None, tavily_key: Optional[str] = None):
         self.provider = provider or OpenStreetMapProvider()
+        self.tavily_key = (tavily_key or "").strip()
 
     def run(
         self,
@@ -68,6 +69,22 @@ class LeadPipeline:
         update(90, f"[Agent 2: Auditor] Auditing leads for '{params.agency_goal}' opportunities & pitch angles...")
         from src.services.agency_qualifier import qualify_leads_batch
         qualify_leads_batch(filtered_leads, params.agency_goal)
+
+        # Optional Tavily Web Footprint Intelligence
+        if self.tavily_key:
+            try:
+                from src.providers.tavily_provider import TavilySearchProvider
+                tavily = TavilySearchProvider(self.tavily_key)
+                if tavily.is_available:
+                    update(95, "[Agent 2: Auditor] Verifying web footprints via Tavily API...")
+                    for lead in filtered_leads[:3]:
+                        if not lead.website:
+                            info = tavily.search_business_info(lead.business_name, params.city)
+                            if info and info.get("url"):
+                                lead.website = info["url"]
+                                qualify_leads_batch([lead], params.agency_goal)
+            except Exception:
+                pass
 
         # 5. Warning / Guidance Checks
         warning_msg = None

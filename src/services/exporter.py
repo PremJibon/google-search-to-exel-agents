@@ -30,7 +30,8 @@ def export_to_excel(leads: List[Lead]) -> bytes:
     df = pd.DataFrame(data)
     if df.empty:
         df = pd.DataFrame(columns=[
-            "Business Name", "Phone", "Address", "Website", "Maps Link", "Category", "Source"
+            "Business Name", "Phone", "Address", "Website", "Lead Score", 
+            "Opportunity", "Suggested Service", "Pitch Angle", "Maps Link", "Category", "Source"
         ])
 
     # Write using xlsxwriter engine
@@ -71,8 +72,9 @@ def export_to_excel(leads: List[Lead]) -> bytes:
                 df[col].astype(str).map(len).max() if not df.empty else 0,
                 len(col)
             ) + 4
-            # Keep column widths readable
-            col_width = min(max(max_len, 14), 50)
+            # Keep column widths readable (wider for Pitch Angle)
+            max_cap = 65 if col == "Pitch Angle" else 50
+            col_width = min(max(max_len, 14), max_cap)
             worksheet.set_column(i, i, col_width, cell_format)
 
     output.seek(0)
@@ -91,7 +93,8 @@ def export_to_csv(leads: List[Lead]) -> bytes:
     df = pd.DataFrame(data)
     if df.empty:
         df = pd.DataFrame(columns=[
-            "Business Name", "Phone", "Address", "Website", "Maps Link", "Category", "Source"
+            "Business Name", "Phone", "Address", "Website", "Lead Score", 
+            "Opportunity", "Suggested Service", "Pitch Angle", "Maps Link", "Category", "Source"
         ])
 
     csv_str = df.to_csv(index=False, encoding="utf-8-sig")
