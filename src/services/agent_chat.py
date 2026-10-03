@@ -8,7 +8,7 @@ from src.services.security import redact_secrets
 from src.services.agency_qualifier import qualify_leads_batch, qualify_lead_for_agency
 from src.services.normalizer import sanitize_phone, sanitize_url
 from src.services.website_auditor import website_auditor
-from src.config import TAVILY_API_KEY
+from src.config import TAVILY_API_KEY, get_tavily_api_key, get_serper_api_key
 
 AGENT_PROFILES = {
     "Apex": {
@@ -290,9 +290,12 @@ JSON:"""
         if geo:
             center_lat, center_lon = geo.lat, geo.lon
 
-        if TAVILY_API_KEY:
+        active_tavily = (get_tavily_api_key() or TAVILY_API_KEY or "").strip()
+        active_serper = (get_serper_api_key() or "").strip()
+
+        if active_tavily:
             try:
-                tavily = TavilySearchProvider(TAVILY_API_KEY)
+                tavily = TavilySearchProvider(active_tavily)
                 leads = tavily.discover_businesses(
                     category=category,
                     location_str=full_loc,
@@ -303,7 +306,21 @@ JSON:"""
             except Exception:
                 leads = []
 
-        # If Tavily had 0 or is unavailable, fallback to OSM
+        # If Tavily had 0 or is unavailable, try Serper Google Maps if configured
+        if not leads and active_serper:
+            try:
+                from src.providers.serper_provider import SerperGoogleMapsProvider
+                serper = SerperGoogleMapsProvider(active_serper)
+                leads = serper.search(
+                    bbox=geo.bounding_box if geo else None,
+                    category=category,
+                    max_results=10,
+                    location_name=full_loc
+                )
+            except Exception:
+                leads = []
+
+        # If still 0, fallback to OSM
         if not leads:
             try:
                 from src.providers.osm_provider import OpenStreetMapProvider
@@ -315,12 +332,14 @@ JSON:"""
                 leads = []
 
         if not leads:
+            has_deep_key = bool(active_tavily or active_serper)
+            key_hint = "" if has_deep_key else "\n- ⚠️ **Notice**: No Deep Web Search key (`TAVILY_API_KEY` or `SERPER_API_KEY`) is active in Streamlit Cloud Secrets. Add `TAVILY_API_KEY` in Streamlit Cloud Settings to enable live Google & web discovery for this region."
             return (
                 f"### 🔭 {agent_profile['avatar']} {agent_profile['name']}: Lead Discovery Report\n\n"
                 f"I searched Google Maps and web intelligence for **{category}** in **{full_loc}**, but could not find matching listings right now.\n\n"
                 f"💡 **Suggestions:**\n"
                 f"- Try searching for related categories like *Gym*, *Fitness Club*, or *Sports Centre*.\n"
-                f"- Broaden the neighborhood or select an adjacent area on the **Geographic Map** tab."
+                f"- Broaden the neighborhood or select an adjacent area on the **Geographic Map** tab.{key_hint}"
             )
 
         # 2. Real-Time Website Audit & Qualification for each lead

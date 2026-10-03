@@ -13,17 +13,43 @@ def get_secret(key: str, default: str = "") -> str:
     1. OS Environment variable (.env or Render)
     2. Streamlit Community Cloud (st.secrets)
     3. Default fallback
+    Automatically strips accidental quotes and ignores template placeholders.
     """
+    def _is_placeholder(val_str: str) -> bool:
+        low = val_str.lower()
+        return any(p in low for p in ["your_", "_here", "<your", "placeholder", "gsk_your", "tvly-your"])
+
     val = os.getenv(key)
     if val is not None and str(val).strip():
-        return str(val).strip()
+        cleaned = str(val).strip().strip("'\"")
+        if cleaned and not _is_placeholder(cleaned):
+            return cleaned
+
     try:
         import streamlit as st
         if hasattr(st, "secrets") and key in st.secrets:
-            return str(st.secrets[key]).strip()
+            cleaned = str(st.secrets[key]).strip().strip("'\"")
+            if cleaned and not _is_placeholder(cleaned):
+                return cleaned
     except Exception:
         pass
+
     return default
+
+def get_groq_api_key() -> str:
+    return get_secret("GROQ_API_KEY", "")
+
+def get_tavily_api_key() -> str:
+    return get_secret("TAVILY_API_KEY", "")
+
+def get_google_maps_api_key() -> str:
+    return get_secret("GOOGLE_MAPS_API_KEY", "")
+
+def get_openrouter_api_key() -> str:
+    return get_secret("OPENROUTER_API_KEY", "")
+
+def get_serper_api_key() -> str:
+    return get_secret("SERPER_API_KEY", "")
 
 # Nominatim Geocoding API
 NOMINATIM_BASE_URL = get_secret("NOMINATIM_BASE_URL", "https://nominatim.openstreetmap.org")

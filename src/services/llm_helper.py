@@ -10,7 +10,9 @@ from src.config import (
     OPENROUTER_DEFAULT_MODEL,
     OPENROUTER_FREE_MODELS,
     BAZAARLINK_BASE_URL,
-    BAZAARLINK_API_KEY
+    BAZAARLINK_API_KEY,
+    get_groq_api_key,
+    get_openrouter_api_key
 )
 
 class LLMHelperService:
@@ -30,18 +32,20 @@ class LLMHelperService:
         bazaarlink_key: Optional[str] = None,
         bazaarlink_base_url: Optional[str] = None
     ):
-        self.groq_key = (groq_key or GROQ_API_KEY).strip()
-        self.openrouter_key = (openrouter_key or OPENROUTER_API_KEY).strip()
+        self.groq_key = (groq_key or "").strip()
+        self.openrouter_key = (openrouter_key or "").strip()
         self.bazaarlink_key = (bazaarlink_key or BAZAARLINK_API_KEY).strip()
         self.bazaarlink_base_url = (bazaarlink_base_url or BAZAARLINK_BASE_URL).rstrip("/")
 
     def get_active_provider_name(self) -> str:
         """Returns the human-readable name of the primary active LLM provider."""
-        if self.groq_key:
+        current_groq = self.groq_key or get_groq_api_key()
+        if current_groq:
             return "⚡ Groq LPU (openai/gpt-oss-120b)"
         if self.bazaarlink_key:
             return "🤖 BazaarLink AI"
-        if self.openrouter_key:
+        current_openrouter = self.openrouter_key or get_openrouter_api_key()
+        if current_openrouter:
             return "🌐 OpenRouter"
         return "🧠 Built-in Agency Heuristics"
 
@@ -54,12 +58,15 @@ class LLMHelperService:
         """
         Executes chat completion cascading from Groq (Tier 1) -> BazaarLink -> OpenRouter -> None.
         """
+        active_groq = (self.groq_key or get_groq_api_key() or "").strip()
+        active_openrouter = (self.openrouter_key or get_openrouter_api_key() or "").strip()
+
         # ========================================================
         # TIER 1: GROQ (Ultra-Fast Primary LPU Inference)
         # ========================================================
-        if self.groq_key:
+        if active_groq:
             headers = {
-                "Authorization": f"Bearer {self.groq_key}",
+                "Authorization": f"Bearer {active_groq}",
                 "Content-Type": "application/json"
             }
             models_to_try = [GROQ_DEFAULT_MODEL] + [m for m in GROQ_MODELS if m != GROQ_DEFAULT_MODEL]
@@ -119,9 +126,9 @@ class LLMHelperService:
         # ========================================================
         # TIER 3: OPENROUTER
         # ========================================================
-        if self.openrouter_key:
+        if active_openrouter:
             headers = {
-                "Authorization": f"Bearer {self.openrouter_key}",
+                "Authorization": f"Bearer {active_openrouter}",
                 "HTTP-Referer": "http://localhost:8501",
                 "X-Title": "LeadFinder Multi-Agent System",
                 "Content-Type": "application/json"

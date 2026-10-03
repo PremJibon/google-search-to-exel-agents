@@ -10,7 +10,7 @@ import time
 import logging
 from typing import Optional, Dict, Any, Union
 from groq import Groq
-from src.config import GROQ_API_KEY
+from src.config import GROQ_API_KEY, get_groq_api_key
 from src.services.security import redact_secrets
 
 logger = logging.getLogger("LeadFinder.VoiceService")
@@ -36,17 +36,26 @@ class VoiceService:
     """
 
     def __init__(self, api_key: Optional[str] = None):
-        self.api_key = (api_key or GROQ_API_KEY or "").strip()
+        self.api_key = (api_key or "").strip()
         self.client: Optional[Groq] = None
-        if self.api_key:
+        self._active_key: Optional[str] = None
+        self._ensure_client()
+
+    def _ensure_client(self) -> None:
+        """Dynamically ensures the Groq client is initialized with the latest key."""
+        current_key = (self.api_key or get_groq_api_key() or "").strip()
+        if current_key and (self.client is None or self._active_key != current_key):
             try:
-                self.client = Groq(api_key=self.api_key)
+                self.client = Groq(api_key=current_key)
+                self._active_key = current_key
             except Exception as e:
                 logger.error(f"Failed to initialize Groq client for VoiceService: {redact_secrets(str(e))}")
+                self.client = None
 
     def is_available(self) -> bool:
         """Checks if the Groq Whisper service is available and configured."""
-        return self.client is not None and bool(self.api_key)
+        self._ensure_client()
+        return self.client is not None and bool(self._active_key)
 
     def transcribe_audio(
         self,
@@ -57,26 +66,14 @@ class VoiceService:
     ) -> Dict[str, Any]:
         """
         Transcribes audio data (bytes, BytesIO stream, or file path) using Groq Whisper.
-        
-        Args:
-            audio_data: Raw bytes, BytesIO buffer, or path to audio file.
-            filename: Virtual filename with extension (.wav, .webm, .mp3, .ogg, .m4a).
-            language: Optional ISO-639-1 language code (e.g. 'en', 'bn'). Defaults to auto-detect.
-            model: Groq Whisper model ('whisper-large-v3-turbo' or 'whisper-large-v3').
-            
-        Returns:
-            Dictionary containing:
-            - 'text': Transcribed text (stripped and cleaned)
-            - 'duration_ms': Transcription duration in milliseconds
-            - 'success': Boolean indicating success
-            - 'error': Optional error message if failed
         """
+        self._ensure_client()
         if not self.is_available():
             return {
                 "text": "",
                 "duration_ms": 0,
                 "success": False,
-                "error": "Groq API key not configured or client initialization failed."
+                "error": "Groq API key not configured. Please add GROQ_API_KEY in Streamlit Cloud Secrets."
             }
 
         start_time = time.time()
@@ -152,11 +149,15 @@ class VoiceService:
             duration_ms = int((time.time() - start_time) * 1000)
             err_msg = redact_secrets(str(e))
             logger.error(f"Groq Whisper transcription failed ({duration_ms}ms): {err_msg}")
+            if "401" in err_msg or "invalid_api_key" in err_msg.lower():
+                user_friendly = "Invalid Groq API key (401). Please verify that GROQ_API_KEY is correctly set in Streamlit Cloud Secrets (App Settings -> Secrets)."
+            else:
+                user_friendly = f"Transcription error: {err_msg}"
             return {
                 "text": "",
                 "duration_ms": duration_ms,
                 "success": False,
-                "error": f"Transcription error: {err_msg}"
+                "error": user_friendly
             }
 
 # Singleton instance

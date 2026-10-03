@@ -9,7 +9,8 @@ from datetime import datetime
 from src.config import (
     APP_NAME, VERSION, GOOGLE_MAPS_API_KEY, SERPER_API_KEY,
     TAVILY_API_KEY, OPENROUTER_API_KEY, BAZAARLINK_BASE_URL, BAZAARLINK_API_KEY,
-    GROQ_API_KEY
+    GROQ_API_KEY, get_groq_api_key, get_tavily_api_key, get_google_maps_api_key,
+    get_serper_api_key, get_openrouter_api_key
 )
 from src.models import SearchParams, SearchResult, Lead
 from src.pipelines.lead_pipeline import LeadPipeline
@@ -105,18 +106,22 @@ if not st.session_state.authenticated:
 with st.sidebar:
     st.markdown("### ⚙️ Search Provider")
 
+    active_tavily = get_tavily_api_key() or TAVILY_API_KEY
+    active_serper = get_serper_api_key() or SERPER_API_KEY
+    active_google = get_google_maps_api_key() or GOOGLE_MAPS_API_KEY
+
     provider_options = ["OpenStreetMap (100% Free - Keyless)"]
-    if TAVILY_API_KEY:
+    if active_tavily:
         provider_options.append("Tavily Web & Google Search (Live AI Discovery)")
-    if SERPER_API_KEY:
+    if active_serper:
         provider_options.append("Google Maps via Serper (2,500 Free)")
-    if GOOGLE_MAPS_API_KEY:
+    if active_google:
         provider_options.append("Google Cloud Places API (Optional)")
 
     def_prov_idx = 0
-    if TAVILY_API_KEY and "Tavily Web & Google Search (Live AI Discovery)" in provider_options:
+    if active_tavily and "Tavily Web & Google Search (Live AI Discovery)" in provider_options:
         def_prov_idx = provider_options.index("Tavily Web & Google Search (Live AI Discovery)")
-    elif SERPER_API_KEY and "Google Maps via Serper (2,500 Free)" in provider_options:
+    elif active_serper and "Google Maps via Serper (2,500 Free)" in provider_options:
         def_prov_idx = provider_options.index("Google Maps via Serper (2,500 Free)")
 
     provider_choice = st.radio(
@@ -126,8 +131,8 @@ with st.sidebar:
         help="OpenStreetMap is 100% free with no key required. Tavily Web Search and Google Maps deliver verified contact numbers and live website auditing."
     )
 
-    serper_api_key = SERPER_API_KEY
-    google_api_key = GOOGLE_MAPS_API_KEY
+    serper_api_key = active_serper
+    google_api_key = active_google
 
     st.markdown("---")
     st.markdown("### 🤖 Active Agent Team")
@@ -293,8 +298,8 @@ with main_tab1:
         else:
             st.session_state.last_search_time = time.time()
             # Determine active provider
-            if "Tavily" in provider_choice and TAVILY_API_KEY:
-                selected_provider = TavilySearchProvider(api_key=TAVILY_API_KEY)
+            if "Tavily" in provider_choice and active_tavily:
+                selected_provider = TavilySearchProvider(api_key=active_tavily)
             elif "Serper" in provider_choice and serper_api_key.strip():
                 selected_provider = SerperGoogleMapsProvider(api_key=serper_api_key.strip())
             elif "Google Cloud" in provider_choice and google_api_key.strip():
@@ -302,7 +307,7 @@ with main_tab1:
             else:
                 selected_provider = OpenStreetMapProvider()
 
-            pipeline = LeadPipeline(provider=selected_provider, tavily_key=TAVILY_API_KEY)
+            pipeline = LeadPipeline(provider=selected_provider, tavily_key=active_tavily)
             params = SearchParams(
                 country=target_country.strip(),
                 city=target_city.strip(),
@@ -565,15 +570,16 @@ with main_tab3:
         map_engine = st.radio(
             "🗺️ Active Map Engine:",
             options=["🌐 Google Maps (Official JS API + Places Autocomplete)", "🌍 OpenStreetMap (Folium Interactive)"],
-            index=0 if GOOGLE_MAPS_API_KEY else 1,
+            index=0 if (active_google or GOOGLE_MAPS_API_KEY) else 1,
             horizontal=True
         )
     with col_eng2:
         st.caption("⚡ Google Maps JS API enabled with live Places search, interactive click-to-pin, and lead audit popups.")
 
-    if "Google Maps" in map_engine and GOOGLE_MAPS_API_KEY:
+    eff_google_key = active_google or GOOGLE_MAPS_API_KEY
+    if "Google Maps" in map_engine and eff_google_key:
         google_html = render_google_map_html(
-            api_key=GOOGLE_MAPS_API_KEY,
+            api_key=eff_google_key,
             center_lat=center_lat,
             center_lon=center_lon,
             zoom=map_zoom,
@@ -721,9 +727,10 @@ with main_tab3:
                 from src.services.website_auditor import website_auditor
 
                 leads_found = []
-                if TAVILY_API_KEY:
+                eff_tavily_key = active_tavily or TAVILY_API_KEY
+                if eff_tavily_key:
                     try:
-                        tavily = TavilySearchProvider(TAVILY_API_KEY)
+                        tavily = TavilySearchProvider(eff_tavily_key)
                         leads_found = tavily.discover_businesses(
                             category=map_cat,
                             location_str=loc_display,

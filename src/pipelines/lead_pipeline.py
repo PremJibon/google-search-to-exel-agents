@@ -6,6 +6,7 @@ from src.providers.osm_provider import OpenStreetMapProvider
 from src.services.geocoding import geocode_location
 from src.services.deduplicator import deduplicate_leads
 from src.services.agency_qualifier import qualify_leads_batch
+from src.config import get_tavily_api_key
 
 class LeadPipeline:
     """
@@ -62,11 +63,12 @@ class LeadPipeline:
             raw_leads = []
 
         # Automatic Intelligent Fallback: If primary provider returned 0 leads and Tavily is available
-        if not raw_leads and self.tavily_key:
+        effective_tavily = (self.tavily_key or get_tavily_api_key() or "").strip()
+        if not raw_leads and effective_tavily:
             try:
                 update(45, f"[Nova - Scout] Zero listings found in {self.provider.name}; activating Tavily Deep Web Discovery...")
                 from src.providers.tavily_provider import TavilySearchProvider
-                tavily_fallback = TavilySearchProvider(self.tavily_key)
+                tavily_fallback = TavilySearchProvider(effective_tavily)
                 if tavily_fallback.is_available:
                     raw_leads = tavily_fallback.discover_businesses(
                         category=params.category,
@@ -109,10 +111,10 @@ class LeadPipeline:
 
         # 6. Collaborative Handshake: Nova & Max Deep Search Loop
         # When Max finds businesses needing a website or contact number, Nova immediately searches for them
-        if self.tavily_key:
+        if effective_tavily:
             try:
                 from src.providers.tavily_provider import TavilySearchProvider
-                tavily = TavilySearchProvider(self.tavily_key)
+                tavily = TavilySearchProvider(effective_tavily)
                 if tavily.is_available:
                     # Target leads that have HIGH priority or missing contact info
                     candidates = [l for l in filtered_leads if (not l.website or not l.phone)][:4]
