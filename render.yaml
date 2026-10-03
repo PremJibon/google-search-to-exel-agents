@@ -1,13 +1,13 @@
 services:
   - type: web
-    name: leadfinder-free
+    name: leadfinder-agency
     env: python
     plan: free
     region: oregon
     buildCommand: pip install -r requirements.txt
-    startCommand: streamlit run app.py --server.port $PORT --server.address 0.0.0.0 --server.headless true
+    startCommand: streamlit run app.py --server.port $PORT --server.address 0.0.0.0 --server.headless true --server.enableCORS true --server.enableXsrfProtection true --browser.gatherUsageStats false
     envVars:
       - key: PYTHON_VERSION
         value: 3.11.8
       - key: APP_USER_AGENT
-        value: LeadFinderFree/1.0 (contact: github-lead-finder)
+        value: LeadFinderFree/2.1 (contact: github-lead-finder)

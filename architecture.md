@@ -1,40 +1,56 @@
-# System Architecture & Technical Specifications
+# System Architecture & Technical Specifications (v2.1)
 
 ## 1. High-Level Architecture Overview
 
 ```mermaid
 flowchart TD
-    UI["Frontend UI (Streamlit / Next.js)"]
-    Controller["Pipeline Orchestrator (LeadPipeline)"]
-    
-    subgraph ProviderLayer ["Data Provider Layer (BusinessDataProvider)"]
-        OSM["OpenStreetMap Provider\n(Nominatim + Overpass API)\n[100% Free - Default]"]
-        Google["Google Places Provider (New)\n[Optional - User API Key]"]
-        Mock["Mock Provider\n[Testing / Offline]"]
-    end
-    
-    subgraph ProcessingEngine ["Lead Processing Engine"]
-        Normalizer["Data Normalizer\n(Phone E.164, URL Sanitizer, Whitespace)"]
-        Deduplicator["Deduplication Engine\n(Fuzzy String + Coordinate Radius)"]
-        Filter["Strict Filter\n(Require Phone, Require Website)"]
-    end
-    
-    subgraph OutputLayer ["Export & Presentation"]
-        Table["Interactive Live Results Table"]
-        Excel["In-Memory XLSX Generator (openpyxl / xlsxwriter)"]
-        CSV["In-Memory CSV Streamer"]
+    User["Agency Owner / User"] --> Gate["Zero-Trust Security Gate\n(HMAC Constant-Time Passkey)"]
+    Gate --> UI["Frontend UI (Streamlit SaaS)"]
+
+    subgraph AgentTeam ["Named AI Agency Team"]
+        Nova["🔭 Nova (Scout)\n[Discovery & Geocoding]"]
+        Max["🔍 Max (Auditor)\n[Tech & Opportunity Audit]"]
+        Apex["📢 Apex (Marketer)\n[Cold Pitch & Closing Strategy]"]
+        Atlas["🧭 Atlas (Strategist)\n[Agency Scaling & Operations]"]
     end
 
-    UI -->|"User Inputs (Area, Category, Filters)"| Controller
-    Controller -->|"Query Search Request"| ProviderLayer
-    OSM -->|"Raw POI Nodes/Ways"| Controller
-    Google -.->|"Optional Place Records"| Controller
-    Controller -->|"Raw Lead List"| ProcessingEngine
-    Normalizer --> Deduplicator --> Filter
-    Filter -->|"Clean Lead Dataset"| OutputLayer
-    Table --> UI
-    Excel -->|"Instant Download"| UI
-    CSV -->|"Instant Download"| UI
+    subgraph ProviderLayer ["Data & Intelligence Layer"]
+        OSM["OpenStreetMap Overpass API\n[100% Free - Default]"]
+        Tavily["Tavily Deep Search API\n[Web Footprint & Phone Lookup]"]
+        Serper["Google Maps via Serper\n[2,500 Free Tier]"]
+    end
+
+    subgraph AIEngines ["Multi-LLM Intelligence Gateway (llm_helper)"]
+        Groq["⚡ Groq LPU (openai/gpt-oss-120b)\n[Tier 1 - Primary 500 tokens/sec]"]
+        BazaarLink["🤖 BazaarLink AI Helper\n[Tier 2 - OpenAI Compatible]"]
+        OpenRouter["🌐 OpenRouter Gateway\n[Tier 3 - Multi-Model Backup]"]
+        Offline["🧠 Built-in Agency Heuristics\n[Tier 4 - 100% Offline Engine]"]
+    end
+
+    subgraph SecurityShield ["6-Layer Security Shield"]
+        FilterRedact["Output Secret Redaction Filter"]
+        FormulaDef["CSV/Excel Formula Injection Defense"]
+        RateLimit["4-Second Search Cooldown & 100-Lead Cap"]
+    end
+
+    subgraph OutputLayer ["Presentation & Export"]
+        Table["Interactive Live Leads Table"]
+        Map["Geocoded Geographic Map View"]
+        Chat["Agency Multi-Agent Chatroom"]
+        Excel["In-Memory XLSX Generator (xlsxwriter)"]
+        CSV["In-Memory UTF-8 CSV Streamer"]
+    end
+
+    UI --> Nova
+    Nova --> ProviderLayer
+    ProviderLayer --> Max
+    Max -->|"High-Need Businesses Flagged"| Nova
+    Nova -->|"Deep Search Phone/Web Enrichment"| Max
+    Max --> Apex
+    AgentTeam <--> AIEngines
+    AgentTeam --> SecurityShield
+    SecurityShield --> OutputLayer
+    OutputLayer --> UI
 ```
 
 ---
@@ -43,109 +59,64 @@ flowchart TD
 
 | Component | Selected Technology | Alternative Considered | Rationale | Cost |
 | :--- | :--- | :--- | :--- | :--- |
-| **Language** | Python 3.11 - 3.14 | TypeScript / Node.js | Fast data processing, pandas, xlsxwriter, rich ecosystem | **$0** (FOSS) |
-| **User Interface** | Streamlit | Next.js + React | Zero boilerplate, native live progress reporting, built-in data editor/table, direct memory-buffered downloads | **$0** (FOSS) |
-| **Primary Free Source** | OpenStreetMap (Overpass + Nominatim) | Direct Google Scraping | Legal, stable, unmetered, no credit card or API key required | **$0** (FOSS) |
-| **Google Maps Source** | Serper API (Google Maps & Places) | Google Cloud Places API | 2,500 free queries, no credit card required, verified Google phone numbers | **$0** (Free Tier) |
-| **Optional Data Source** | Google Places API (New) | Direct Scraping | Official GCP API if user brings billing-enabled key | **$0** (Pay-as-you-go) |
-| **Data Processing** | Python `pandas` & regex | Custom JS arrays | Vectorized deduplication, fast phone and string cleaning | **$0** (FOSS) |
-| **Spreadsheet Engine**| `xlsxwriter` / `openpyxl` | SheetJS | High performance Excel generation with cell styling, auto-width, frozen headers | **$0** (FOSS) |
-| **Deployment Target** | Render Free Tier (Web Service / Docker) / Streamlit Cloud | Vercel / AWS | Native free hosting tier, no credit card required on Streamlit Cloud, straightforward on Render | **$0** |
+| **Language** | Python 3.11 - 3.14 | TypeScript / Node.js | Fast data processing, rich ecosystem | **$0** (FOSS) |
+| **User Interface** | Streamlit | Next.js + React | Zero boilerplate, native live progress, instant memory downloads | **$0** (FOSS) |
+| **Primary AI Engine** | **Groq LPU** (`openai/gpt-oss-120b`) | OpenAI GPT-4o / Anthropic | 500+ tokens/sec, sub-second latency, generous free tier | **$0** (Free Tier) |
+| **Helper AI** | BazaarLink AI (`api.bazaarlink.ai/v1`) | Local Ollama | Fast OpenAI-compatible assistant | **$0** (Free Tier) |
+| **Deep Search** | Tavily Search API | Direct HTML Scraping | High-accuracy business footprint, contact & phone lookup | **$0** (1k Free/mo) |
+| **Free Map Data** | OpenStreetMap (Overpass + Nominatim) | Direct Google Scraping | Legal, stable, unmetered, keyless | **$0** (FOSS) |
+| **Spreadsheet Engine**| `xlsxwriter` | SheetJS | High performance Excel generation with styling, auto-width, frozen headers | **$0** (FOSS) |
+| **Security Shield** | `hmac`, regex redaction, formula escaping | Cloudflare WAF | Built-in zero-trust passkey, anti-injection, and rate-limiting | **$0** (Native) |
+| **Hosting Target** | Streamlit Community Cloud / Render Free | AWS / GCP Paid | 100% free hosting forever, custom domains, free SSL | **$0** |
 
 ---
 
-## 3. Provider Abstraction (`BusinessDataProvider`)
-
-To ensure the system never locks into a single source or breaks if an API changes, all data retrieval is decoupled behind an abstract base interface:
-
-```python
-from abc import ABC, abstractmethod
-from typing import List, Dict, Any, Optional
-
-class BusinessDataProvider(ABC):
-    @abstractmethod
-    def geocode_location(self, country: str, city: str, area: str) -> Optional[Dict[str, float]]:
-        """Resolves country/city/area to bounding box and lat/lon coordinates."""
-        pass
-
-    @abstractmethod
-    def search_businesses(
-        self,
-        bounding_box: Dict[str, float],
-        category: str,
-        keyword: Optional[str] = None,
-        max_results: int = 50,
-        progress_callback = None
-    ) -> List[Dict[str, Any]]:
-        """Fetches raw business entities within the bounding box."""
-        pass
-```
-
-### 3.1. Provider 1: OpenStreetMap (Overpass QL) [Default - 100% Free]
-- **Geocoding**: Query Nominatim with custom User-Agent:
-  `https://nominatim.openstreetmap.org/search?q={area},{city},{country}&format=json&polygon_geojson=1`
-- **POI Retrieval**: Execute Overpass QL query targeting amenity, shop, office, tourism, or healthcare tags matching the target category.
-  - Generates bounding box: `(south, west, north, east)`
-  - Overpass endpoints with fallback:
-    1. `https://overpass-api.de/api/interpreter`
-    2. `https://lz4.overpass-api.de/api/interpreter`
-    3. `https://overpass.kumi.systems/api/interpreter`
-- **Pros**: Completely free, unlimited public usage within fair use, no account required.
-- **Cons**: Phone numbers and websites are volunteer-contributed; coverage is rich in dense urban areas and sparse in rural regions.
-
-### 3.2. Provider 2: Google Maps via Serper API [Free Tier - 2,500 Queries, No Credit Card]
-- Activated when user inputs `SERPER_API_KEY` in `.env` or sidebar settings.
-- Directly retrieves official Google Maps business listings via `https://google.serper.dev/maps`.
-- Extracts: Business Name, Google Phone Number, Address, Website, Maps Link (CID), Rating, and Category.
-- **Pros**: Delivers real-time Google Maps search data without requiring Google Cloud Console setup or credit card billing.
-
-### 3.3. Provider 3: Google Cloud Places API [Optional Enterprise Extension]
-- Uses official GCP `places:searchText` endpoint when billing-enabled `GOOGLE_MAPS_API_KEY` is provided.
-
----
-
-## 4. Processing & Deduplication Pipeline
+## 3. Collaborative Dual-Agent Handshake Loop
 
 ```mermaid
 sequenceDiagram
     autonumber
     actor User
-    participant UI as Streamlit UI
+    participant UI as Streamlit SaaS UI
     participant Pipe as LeadPipeline
-    participant Provider as OpenStreetMapProvider
-    participant Norm as DataNormalizer
-    participant Dedup as DeduplicationEngine
+    participant Nova as 🔭 Nova (Scout)
+    participant Max as 🔍 Max (Auditor)
+    participant Tavily as 🌐 Tavily Deep Search
+    participant Apex as 📢 Apex (Digital Marketer)
 
-    User->>UI: Submit Search (Bangalore, Koramangala, Restaurants, Limit=50)
-    UI->>Pipe: run(query_params, progress_callback)
-    Pipe->>UI: Update Progress (15%: Resolving Coordinates)
-    Pipe->>Provider: geocode_location("India", "Bangalore", "Koramangala")
-    Provider-->>Pipe: Return Bounding Box
-    Pipe->>UI: Update Progress (40%: Querying Overpass API)
-    Pipe->>Provider: search_businesses(bbox, "restaurant", max_results=50)
-    Provider-->>Pipe: Return Raw POIs
-    Pipe->>UI: Update Progress (65%: Normalizing Data)
-    Pipe->>Norm: clean_phone(), clean_url(), sanitize_strings()
-    Norm-->>Pipe: Normalized Records
-    Pipe->>UI: Update Progress (85%: Deduplicating)
-    Pipe->>Dedup: remove_duplicates(by_name_and_coords)
-    Dedup-->>Pipe: Clean Unique Leads
-    Pipe->>UI: Update Progress (100%: Completed)
-    UI->>User: Display Interactive Results Table & Download Buttons
+    User->>UI: Submit Search ("Gym", "Kamalapur, Dhaka", Goal: "AI Automation")
+    UI->>Pipe: run(params)
+    Pipe->>Nova: Geocode & Scan POIs
+    Nova-->>Pipe: Return 10 Discovered Gyms (Raw)
+    Pipe->>Max: Initial Audit (Inspect websites, phones, categories)
+    Max-->>Pipe: Flag 4 High-Priority Prospects (Missing Website or Phone)
+    Pipe->>Nova: Trigger Deep Search on Flagged Prospects
+    Nova->>Tavily: Search: "{business_name} {city} phone contact website"
+    Tavily-->>Nova: Extract Official Website, Social Link, and Phone (+880...)
+    Nova-->>Pipe: Enriched Lead Records
+    Pipe->>Max: Re-audit Enriched Leads (Assign Service: 24/7 AI Receptionist)
+    Pipe->>Apex: Synthesize Cold WhatsApp Pitch & Closing Angles
+    Apex-->>Pipe: Completed Qualified Lead Dataset
+    Pipe->>UI: Render Table, Map, and Chat Context
 ```
 
 ---
 
-## 5. Ephemeral Filesystem Strategy (Render Free Tier Compliance)
-On Render Free web services:
-- The filesystem is ephemeral (files are erased when the instance idles, restarts, or redeploys).
-- **Architectural Solution**: No lead files or SQLite databases are written to persistent disk. All `.xlsx` and `.csv` files are generated in-memory using `io.BytesIO()` streams and served directly to the client browser via Streamlit's `st.download_button`.
-- Zero database maintenance and zero disk accumulation.
+## 4. Multi-Layer Security Architecture
 
----
+### 4.1. Zero-Trust Access Gatekeeper
+- Validates user input against `APP_ACCESS_PASSWORD` using `hmac.compare_digest()` to prevent timing attacks.
+- If password is unset in `.env`, application runs in open development mode.
 
-## 6. Error Handling & Resilience
-- **Nominatim 429 / Rate Limit**: Backoff retry with 1.5s delay and meaningful User-Agent header.
-- **Overpass Server Busy**: Automatic failover across 3 independent public Overpass mirrors.
-- **Location Not Found**: Returns actionable recommendation: *"Could not locate 'Koramangala' in 'Bangalore'. Try a broader district or city name."*
-- **No Leads Found**: Returns helpful diagnostic: *"No businesses matching 'Dental clinics' found in this boundary. Try expanding the search radius or disabling 'Must have phone'."*
+### 4.2. Automated Output Redaction Filter
+- Intercepts all LLM and agent outputs before rendering to the client browser.
+- Automatically redacts regex patterns for `gsk_`, `tvly-`, `sk-or-`, `sk-bl-`, and Bearer tokens.
+
+### 4.3. Spreadsheet Formula Injection Defense
+- Every text cell exported to `.xlsx` or `.csv` is inspected by `sanitize_formula_injection()`.
+- Prepends a single quote `'` to any cell starting with `=`, `+`, `-`, `@`, `|`, `\t`, or `\r`.
+
+### 4.4. Memory & DoS Shield (512MB RAM Cap)
+- Hard clamp enforcing maximum limit of 100 leads per query.
+- 4-second minimum search cooldown per user session.
+- Explicit `gc.collect()` and buffer dereferencing upon file streaming.

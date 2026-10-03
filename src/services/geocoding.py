@@ -112,3 +112,44 @@ def geocode_location(country: str, city: str, area: str) -> Optional[GeoLocation
             pass
 
     return None
+
+def reverse_geocode(lat: float, lon: float) -> str:
+    """
+    Reverse geocodes coordinates into a clean human-readable neighborhood/city string.
+    """
+    headers = {
+        "User-Agent": APP_USER_AGENT,
+        "Accept-Language": "en"
+    }
+    _rate_limit()
+    try:
+        resp = requests.get(
+            f"{NOMINATIM_BASE_URL}/reverse",
+            params={"lat": lat, "lon": lon, "format": "json"},
+            headers=headers,
+            timeout=GEOCODE_TIMEOUT
+        )
+        if resp.status_code == 200:
+            data = resp.json()
+            addr = data.get("address", {})
+            area = (
+                addr.get("suburb") or
+                addr.get("neighbourhood") or
+                addr.get("quarter") or
+                addr.get("residential") or
+                addr.get("road") or
+                ""
+            )
+            city = addr.get("city") or addr.get("town") or addr.get("district") or addr.get("state") or ""
+            country = addr.get("country") or ""
+            parts = [p for p in [area, city, country] if p]
+            if parts:
+                return ", ".join(parts)
+            return data.get("display_name", f"{lat:.4f}, {lon:.4f}")
+    except Exception:
+        pass
+    return f"{lat:.4f}, {lon:.4f}"
+
+def create_radial_bbox(lat: float, lon: float, radius_km: float = 3.5) -> GeoBoundingBox:
+    """Public helper to calculate a bounding box around center coordinates."""
+    return _create_radial_bbox(lat, lon, radius_km)

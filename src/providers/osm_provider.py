@@ -62,8 +62,7 @@ out center tags {max_fetch};"""
     ) -> List[Lead]:
         query = self._build_overpass_query(bbox, category, keyword, max_results)
         headers = {
-            "User-Agent": APP_USER_AGENT,
-            "Accept": "application/json"
+            "User-Agent": APP_USER_AGENT
         }
 
         data = None
@@ -85,10 +84,11 @@ out center tags {max_fetch};"""
                     timeout=OVERPASS_TIMEOUT
                 )
 
-                if response.status_code == 200:
+                if response.status_code == 200 and response.text.strip().startswith("{"):
                     try:
-                        data = response.json()
-                        if data and "elements" in data and len(data["elements"]) > 0:
+                        parsed = response.json()
+                        if parsed and "elements" in parsed:
+                            data = parsed
                             break
                     except Exception:
                         pass
