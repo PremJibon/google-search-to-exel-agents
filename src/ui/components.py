@@ -135,7 +135,7 @@ def leads_to_dataframe(leads: List[Lead]) -> pd.DataFrame:
     """Converts lead objects to a clean display DataFrame."""
     if not leads:
         return pd.DataFrame(columns=[
-            "Business Name", "Phone", "Address", "Website", "Lead Score", "Opportunity", "Suggested Service", "Pitch Angle", "Maps Link", "Category", "Source"
+            "Business Name", "Phone", "WhatsApp Link", "Opportunity", "Audit Score", "Lead Score", "Suggested Service", "Tailored Pitch Angle", "Audit Flaws", "Website", "Address", "Maps Link", "Category", "Source"
         ])
     data = [lead.to_export_dict() for lead in leads]
     return pd.DataFrame(data)

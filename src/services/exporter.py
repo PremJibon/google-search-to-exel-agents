@@ -30,8 +30,9 @@ def export_to_excel(leads: List[Lead]) -> bytes:
     df = pd.DataFrame(data)
     if df.empty:
         df = pd.DataFrame(columns=[
-            "Business Name", "Phone", "Address", "Website", "Lead Score", 
-            "Opportunity", "Suggested Service", "Pitch Angle", "Maps Link", "Category", "Source"
+            "Business Name", "Phone", "WhatsApp Link", "Opportunity", "Audit Score",
+            "Lead Score", "Suggested Service", "Tailored Pitch Angle", "Audit Flaws",
+            "Website", "Address", "Maps Link", "Category", "Source"
         ])
 
     # Write using xlsxwriter engine
@@ -47,8 +48,8 @@ def export_to_excel(leads: List[Lead]) -> bytes:
             "bold": True,
             "text_wrap": False,
             "valign": "middle",
-            "fg_color": "#1E293B",  # Slate 800
-            "font_color": "#FFFFFF",
+            "fg_color": "#0F172A",  # Slate 900
+            "font_color": "#38BDF8",  # Sky blue accent
             "border": 1
         })
 
@@ -72,8 +73,8 @@ def export_to_excel(leads: List[Lead]) -> bytes:
                 df[col].astype(str).map(len).max() if not df.empty else 0,
                 len(col)
             ) + 4
-            # Keep column widths readable (wider for Pitch Angle)
-            max_cap = 65 if col == "Pitch Angle" else 50
+            # Keep column widths readable (wider for Pitch Angle and Flaws)
+            max_cap = 75 if ("Pitch" in col or "Flaws" in col or "Address" in col) else 45
             col_width = min(max(max_len, 14), max_cap)
             worksheet.set_column(i, i, col_width, cell_format)
 
@@ -93,8 +94,9 @@ def export_to_csv(leads: List[Lead]) -> bytes:
     df = pd.DataFrame(data)
     if df.empty:
         df = pd.DataFrame(columns=[
-            "Business Name", "Phone", "Address", "Website", "Lead Score", 
-            "Opportunity", "Suggested Service", "Pitch Angle", "Maps Link", "Category", "Source"
+            "Business Name", "Phone", "WhatsApp Link", "Opportunity", "Audit Score",
+            "Lead Score", "Suggested Service", "Tailored Pitch Angle", "Audit Flaws",
+            "Website", "Address", "Maps Link", "Category", "Source"
         ])
 
     csv_str = df.to_csv(index=False, encoding="utf-8-sig")

@@ -140,9 +140,13 @@ class SerperGoogleMapsProvider(BusinessDataProvider):
                     rating = p.get("rating")
                     rating_count = p.get("ratingCount")
 
+                    from src.services.normalizer import generate_whatsapp_link
+                    wa_link = generate_whatsapp_link(phone, country=location_name or "")
+
                     lead = Lead(
                         business_name=name,
                         phone=phone,
+                        whatsapp_link=wa_link,
                         address=address,
                         website=website,
                         maps_link=maps_link,

@@ -19,8 +19,15 @@ class LeadPipeline:
     """
 
     def __init__(self, provider: Optional[BusinessDataProvider] = None, tavily_key: Optional[str] = None):
-        self.provider = provider or OpenStreetMapProvider()
-        self.tavily_key = (tavily_key or "").strip()
+        t_key = (tavily_key or get_tavily_api_key() or "").strip()
+        self.tavily_key = t_key
+        if provider:
+            self.provider = provider
+        elif t_key:
+            from src.providers.tavily_provider import TavilySearchProvider
+            self.provider = TavilySearchProvider(api_key=t_key)
+        else:
+            self.provider = OpenStreetMapProvider()
 
     def run(
         self,
@@ -48,7 +55,7 @@ class LeadPipeline:
             )
 
         # 2. Querying Business POIs
-        update(35, f"[Nova - Scout] Scanning businesses ({params.category}) via {self.provider.name}...")
+        update(35, f"[Nova - Scout] Scanning real businesses ({params.category}) via {self.provider.name}...")
         raw_leads = []
         try:
             raw_leads = self.provider.search(
@@ -64,9 +71,9 @@ class LeadPipeline:
 
         # Automatic Intelligent Fallback: If primary provider returned 0 leads and Tavily is available
         effective_tavily = (self.tavily_key or get_tavily_api_key() or "").strip()
-        if not raw_leads and effective_tavily:
+        if not raw_leads and effective_tavily and not isinstance(self.provider, TavilySearchProvider):
             try:
-                update(45, f"[Nova - Scout] Zero listings found in {self.provider.name}; activating Tavily Deep Web Discovery...")
+                update(45, f"[Nova - Scout] Activating Live Google Search Intelligence for {params.category}...")
                 from src.providers.tavily_provider import TavilySearchProvider
                 tavily_fallback = TavilySearchProvider(effective_tavily)
                 if tavily_fallback.is_available:
@@ -99,15 +106,19 @@ class LeadPipeline:
             if len(filtered_leads) >= safe_limit:
                 break
 
-        # 5. Agent 2 (Max): Initial Digital Audit
-        update(75, f"[Max - Auditor] Auditing {len(filtered_leads)} leads for '{params.agency_goal}' opportunities...")
+        # 5. Agent 2 (Max): Antigravity Deep Digital Audit
+        update(75, f"[Max - Antigravity Auditor] Deep-auditing {len(filtered_leads)} leads for '{params.agency_goal}' opportunities...")
         from src.services.website_auditor import website_auditor
+        from src.services.normalizer import generate_whatsapp_link
         for l in filtered_leads:
-            audit = website_auditor.audit(l.business_name, l.website, l.phone, params.category, f"{params.area}, {params.city}")
+            audit = website_auditor.audit(l.business_name, l.website, l.phone, params.category, f"{params.area}, {params.city}", agency_goal=params.agency_goal)
             l.lead_score = audit.get("opportunity_score", l.lead_score)
+            l.audit_score = audit.get("audit_score", 50)
             l.opportunity_type = audit.get("badge", l.opportunity_type)
             l.suggested_service = audit.get("suggested_service", l.suggested_service)
             l.pitch_angle = audit.get("pitch_hook", l.pitch_angle)
+            l.audit_flaws = audit.get("top_flaws", [])
+            l.whatsapp_link = generate_whatsapp_link(l.phone, country=params.country)
 
         # 6. Collaborative Handshake: Nova & Max Deep Search Loop
         # When Max finds businesses needing a website or contact number, Nova immediately searches for them
@@ -119,7 +130,7 @@ class LeadPipeline:
                     # Target leads that have HIGH priority or missing contact info
                     candidates = [l for l in filtered_leads if (not l.website or not l.phone)][:4]
                     if candidates:
-                        update(85, f"[Nova & Max Co-Pilot] Immediately running Deep Search for {len(candidates)} high-priority businesses...")
+                        update(85, f"[Nova & Max Co-Pilot] Running Deep Search for {len(candidates)} high-priority businesses...")
                         for candidate in candidates:
                             info = tavily.search_business_info(candidate.business_name, params.city, params.country)
                             if info:
@@ -127,13 +138,16 @@ class LeadPipeline:
                                     candidate.website = info["url"]
                                 if not candidate.phone and info.get("phone"):
                                     candidate.phone = info["phone"]
-                        # Re-audit enriched leads
+                        # Re-audit enriched leads with Antigravity Auditor
                         for candidate in candidates:
-                            audit = website_auditor.audit(candidate.business_name, candidate.website, candidate.phone, params.category, f"{params.area}, {params.city}")
+                            candidate.whatsapp_link = generate_whatsapp_link(candidate.phone, country=params.country)
+                            audit = website_auditor.audit(candidate.business_name, candidate.website, candidate.phone, params.category, f"{params.area}, {params.city}", agency_goal=params.agency_goal)
                             candidate.lead_score = audit.get("opportunity_score", candidate.lead_score)
+                            candidate.audit_score = audit.get("audit_score", 50)
                             candidate.opportunity_type = audit.get("badge", candidate.opportunity_type)
                             candidate.suggested_service = audit.get("suggested_service", candidate.suggested_service)
                             candidate.pitch_angle = audit.get("pitch_hook", candidate.pitch_angle)
+                            candidate.audit_flaws = audit.get("top_flaws", [])
             except Exception:
                 pass
 

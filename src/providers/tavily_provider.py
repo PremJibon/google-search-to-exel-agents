@@ -207,7 +207,7 @@ JSON:"""
                 lat = round(center_lat + d_lat, 6)
                 lon = round(center_lon + d_lon, 6)
 
-            # Live digital audit by Max
+            # Live digital audit by Antigravity Auditor
             audit_result = website_auditor.audit(
                 business_name=b_name,
                 website=clean_web,
@@ -216,22 +216,28 @@ JSON:"""
                 location=location_str
             )
 
+            from src.services.normalizer import generate_whatsapp_link
+            wa_link = generate_whatsapp_link(clean_phone, country=location_str)
+
             lead = Lead(
                 business_name=b_name,
                 phone=clean_phone,
+                whatsapp_link=wa_link,
                 address=str(item.get("address") or f"{location_str}").strip(),
                 website=clean_web,
                 maps_link=f"https://www.google.com/maps/search/?api=1&query={b_name.replace(' ', '+')}+{location_str.replace(' ', '+')}",
                 category=category.title(),
-                source="Tavily Web Search",
+                source="Google Search & Maps (Live)",
                 status="FOUND" if clean_phone else "MISSING_PHONE",
                 lat=lat,
                 lon=lon,
                 raw_id=f"tavily/{idx}",
                 lead_score=audit_result.get("opportunity_score", "MEDIUM"),
+                audit_score=audit_result.get("audit_score", 50),
                 opportunity_type=audit_result.get("badge", "Audit Pending"),
                 suggested_service=audit_result.get("suggested_service", "Website Development"),
-                pitch_angle=audit_result.get("pitch_hook", "")
+                pitch_angle=audit_result.get("pitch_hook", ""),
+                audit_flaws=audit_result.get("top_flaws", [])
             )
             leads.append(lead)
 
@@ -242,7 +248,7 @@ JSON:"""
 
     def search_business_info(self, business_name: str, city: str, country: str = "") -> Optional[Dict[str, Any]]:
         """
-        Enriches a business by searching Tavily for official websites, active social profiles,
+        Enriches a business by searching for official websites, active social profiles,
         and public contact phone numbers.
         """
         if not self.is_available:
@@ -259,7 +265,8 @@ JSON:"""
             best_phone = ""
             best_snippet = ""
 
-            phone_regex = re.compile(r'(?:\+?880\s?1[3-9]\d{8}|01[3-9]\d{8}|\+?91\s?\d{10}|\+?1\s?\d{10})')
+            # Robust phone matching pattern
+            phone_regex = re.compile(r'(?:\+?[0-9]{1,4}[\s\-]?)?(?:\(?\d{2,4}\)?[\s\-]?)?\d{3,5}[\s\-]?\d{3,5}')
 
             for r in results:
                 url = r.get("url", "")

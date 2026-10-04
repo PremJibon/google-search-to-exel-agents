@@ -104,3 +104,35 @@ def format_address_from_tags(tags: dict) -> str:
         parts.append(tags["addr:postcode"])
 
     return ", ".join(parts) if parts else tags.get("address", "")
+
+def generate_whatsapp_link(phone: str, country: str = "") -> str:
+    """
+    Generates a direct WhatsApp click-to-chat URL: https://wa.me/{country_code}{digits}
+    Automatically resolves common country prefixes if phone is in local format.
+    """
+    if not phone:
+        return ""
+    digits = re.sub(r"\D", "", phone.strip())
+    if not digits or len(digits) < 7:
+        return ""
+
+    # If already has leading '+' international code
+    if phone.strip().startswith("+"):
+        return f"https://wa.me/{digits}"
+
+    # Handle local leading 0 based on country context
+    country_lower = (country or "").lower()
+    if digits.startswith("0"):
+        if "bangladesh" in country_lower or "bd" in country_lower:
+            return f"https://wa.me/880{digits[1:]}"
+        elif "india" in country_lower:
+            return f"https://wa.me/91{digits[1:]}"
+        elif "uk" in country_lower or "kingdom" in country_lower:
+            return f"https://wa.me/44{digits[1:]}"
+        elif "australia" in country_lower:
+            return f"https://wa.me/61{digits[1:]}"
+        elif "pakistan" in country_lower:
+            return f"https://wa.me/92{digits[1:]}"
+
+    # Default fallback
+    return f"https://wa.me/{digits}"

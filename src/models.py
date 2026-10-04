@@ -47,22 +47,30 @@ class Lead:
     raw_id: str = ""
     tags: Dict[str, Any] = field(default_factory=dict)
     
-    # Agency Qualification Fields (Agent 2)
+    # Contact & Outreach Links
+    whatsapp_link: str = ""
+    
+    # Antigravity Website & Digital Audit Fields
     lead_score: str = "MEDIUM"        # HIGH, MEDIUM, LOW
-    opportunity_type: str = ""        # e.g. "No Website", "Social Only Website", "High-Volume Booking Need"
-    suggested_service: str = ""       # e.g. "Custom Website Design", "AI Receptionist / Chatbot"
+    audit_score: int = 50             # 0 to 100 Health Score
+    opportunity_type: str = ""        # e.g. "❌ No Official Website", "🤖 No AI Booking / WhatsApp"
+    suggested_service: str = ""       # e.g. "Custom Website Design", "24/7 AI Receptionist / Chatbot"
     pitch_angle: str = ""             # e.g. "Pitch a responsive website with online ordering"
+    audit_flaws: List[str] = field(default_factory=list) # Concrete flaws for outreach ammunition
 
     def to_export_dict(self) -> Dict[str, str]:
         return {
             "Business Name": self.business_name,
             "Phone": self.phone,
-            "Address": self.address,
-            "Website": self.website,
-            "Lead Score": self.lead_score,
+            "WhatsApp Link": self.whatsapp_link,
             "Opportunity": self.opportunity_type,
+            "Audit Score": f"{self.audit_score}/100",
+            "Lead Score": self.lead_score,
             "Suggested Service": self.suggested_service,
-            "Pitch Angle": self.pitch_angle,
+            "Tailored Pitch Angle": self.pitch_angle,
+            "Audit Flaws": "; ".join(self.audit_flaws) if self.audit_flaws else "None",
+            "Website": self.website,
+            "Address": self.address,
             "Maps Link": self.maps_link,
             "Category": self.category,
             "Source": self.source

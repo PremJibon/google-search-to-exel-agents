@@ -342,7 +342,8 @@ JSON:"""
                 f"- Broaden the neighborhood or select an adjacent area on the **Geographic Map** tab.{key_hint}"
             )
 
-        # 2. Real-Time Website Audit & Qualification for each lead
+        # 2. Real-Time Antigravity Website Audit & Qualification for each lead
+        from src.services.normalizer import generate_whatsapp_link
         for lead in leads:
             audit = website_auditor.audit(
                 business_name=lead.business_name,
@@ -353,9 +354,12 @@ JSON:"""
                 agency_goal=target_goal
             )
             lead.lead_score = audit.get("opportunity_score", "MEDIUM")
+            lead.audit_score = audit.get("audit_score", 50)
             lead.opportunity_type = audit.get("badge", "Audit Completed")
             lead.suggested_service = audit.get("suggested_service", target_goal)
             lead.pitch_angle = audit.get("pitch_hook", lead.pitch_angle)
+            lead.audit_flaws = audit.get("top_flaws", [])
+            lead.whatsapp_link = generate_whatsapp_link(lead.phone, country=country)
 
         # 3. Filter if specifically requested
         if require_no_web:
@@ -385,16 +389,16 @@ JSON:"""
             agency_goal=target_goal
         )
 
-        # 5. Format Claude-Style Interactive Output
+        # 5. Format Interactive Antigravity Executive Output
         output_blocks = [
-            f"### 🚀 {agent_profile['avatar']} {agent_profile['name']} — Live Lead Discovery & Digital Audit",
+            f"### 🚀 {agent_profile['avatar']} {agent_profile['name']} — Live Lead Discovery & Antigravity Audit",
             f"**Target Niche:** `{category}` | **Location:** `{full_loc}` | **Agency Pitch Mode:** `{target_goal}`",
-            f"**Status:** Successfully discovered and audited **{len(leads)} verified commercial businesses**.\n"
+            f"**Status:** Successfully discovered and deep-audited **{len(leads)} verified commercial businesses**.\n"
         ]
 
         for i, lead in enumerate(display_leads, 1):
             phone_display = lead.phone if lead.phone else "*(No public phone listed)*"
-            wa_link = self._format_whatsapp_url(lead.phone, f"Hi {lead.business_name}, I noticed your business in {area or city}...")
+            wa_link = lead.whatsapp_link or self._format_whatsapp_url(lead.phone, f"Hi {lead.business_name}, I noticed your business in {area or city}...")
 
             if not lead.website:
                 web_status = "❌ **No Official Website Found** — *(Prime $500–$1,500 High-Ticket Website Prospect!)*"
@@ -404,6 +408,7 @@ JSON:"""
                 web_status = f"✅ **Live Website**: [{lead.website[:35]}...]({lead.website})"
 
             wa_badge = f"[🟢 Click to Chat on WhatsApp]({wa_link})" if wa_link else ""
+            flaws_str = f"- ⚠️ **Audit Flaws Detected**: *{'; '.join(lead.audit_flaws[:2])}*\n" if lead.audit_flaws else ""
 
             output_blocks.append(f"""
 ---
@@ -411,9 +416,10 @@ JSON:"""
 - 📍 **Address**: {lead.address}
 - 📞 **Phone / WhatsApp**: `{phone_display}` {wa_badge}
 - 🌐 **Web Status**: {web_status}
-- 🔍 **Max's Audit ({lead.lead_score} Opportunity)**: {lead.opportunity_type}
-- 🎯 **Suggested Service**: `{lead.suggested_service}`
-- 📢 **Apex's Ready-to-Send Outreach Pitch**:
+- 🛡️ **Antigravity Health Score**: `{lead.audit_score}/100` ({lead.lead_score} Opportunity)
+- 🔍 **Audit Diagnostic**: {lead.opportunity_type}
+{flaws_str}- 🎯 **Suggested Service**: `{lead.suggested_service}`
+- 📢 **Ready-to-Send Outreach Pitch**:
   > *\"{lead.pitch_angle}\"*
 """)
 

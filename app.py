@@ -110,25 +110,20 @@ with st.sidebar:
     active_serper = get_serper_api_key() or SERPER_API_KEY
     active_google = get_google_maps_api_key() or GOOGLE_MAPS_API_KEY
 
-    provider_options = ["OpenStreetMap (100% Free - Keyless)"]
+    provider_options = []
     if active_tavily:
-        provider_options.append("Tavily Web & Google Search (Live AI Discovery)")
+        provider_options.append("Google Search & Maps (Live AI Discovery)")
     if active_serper:
         provider_options.append("Google Maps via Serper (2,500 Free)")
     if active_google:
-        provider_options.append("Google Cloud Places API (Optional)")
-
-    def_prov_idx = 0
-    if active_tavily and "Tavily Web & Google Search (Live AI Discovery)" in provider_options:
-        def_prov_idx = provider_options.index("Tavily Web & Google Search (Live AI Discovery)")
-    elif active_serper and "Google Maps via Serper (2,500 Free)" in provider_options:
-        def_prov_idx = provider_options.index("Google Maps via Serper (2,500 Free)")
+        provider_options.append("Google Cloud Places API (Official)")
+    provider_options.append("OpenStreetMap (Keyless Fallback)")
 
     provider_choice = st.radio(
         "Active Data Provider",
         options=provider_options,
-        index=def_prov_idx,
-        help="OpenStreetMap is 100% free with no key required. Tavily Web Search and Google Maps deliver verified contact numbers and live website auditing."
+        index=0,
+        help="Google Search & Maps delivers real verified local businesses, phone numbers, and live Antigravity website auditing."
     )
 
     serper_api_key = active_serper
@@ -138,7 +133,7 @@ with st.sidebar:
     st.markdown("### 🤖 Active Agent Team")
     st.markdown("""
         <div class="agent-pill pill-nova">🔭 Nova • Lead Discovery</div>
-        <div class="agent-pill pill-max">🔍 Max • Tech Auditor</div>
+        <div class="agent-pill pill-max">🔍 Max • Antigravity Auditor</div>
         <div class="agent-pill pill-apex">📢 Apex • Digital Marketer</div>
         <div class="agent-pill pill-atlas">🧭 Atlas • Agency Mentor</div>
     """, unsafe_allow_html=True)
@@ -298,7 +293,7 @@ with main_tab1:
         else:
             st.session_state.last_search_time = time.time()
             # Determine active provider
-            if "Tavily" in provider_choice and active_tavily:
+            if ("Google Search" in provider_choice or "Tavily" in provider_choice) and active_tavily:
                 selected_provider = TavilySearchProvider(api_key=active_tavily)
             elif "Serper" in provider_choice and serper_api_key.strip():
                 selected_provider = SerperGoogleMapsProvider(api_key=serper_api_key.strip())
@@ -411,17 +406,20 @@ with main_tab1:
             df,
             use_container_width=True,
             column_config={
-                "Business Name": st.column_config.TextColumn(width="medium"),
-                "Phone": st.column_config.TextColumn(width="small"),
-                "Lead Score": st.column_config.TextColumn(width="small"),
-                "Opportunity": st.column_config.TextColumn(width="medium"),
-                "Suggested Service": st.column_config.TextColumn(width="medium"),
-                "Pitch Angle": st.column_config.TextColumn(width="large"),
-                "Address": st.column_config.TextColumn(width="medium"),
-                "Website": st.column_config.LinkColumn(width="medium"),
-                "Maps Link": st.column_config.LinkColumn(width="small"),
-                "Category": st.column_config.TextColumn(width="small"),
-                "Source": st.column_config.TextColumn(width="small")
+                "Business Name": st.column_config.TextColumn("🏢 Business Name", width="medium"),
+                "Phone": st.column_config.TextColumn("📞 Phone", width="small"),
+                "WhatsApp Link": st.column_config.LinkColumn("💬 WhatsApp", width="small"),
+                "Audit Score": st.column_config.TextColumn("🛡️ Health", width="small"),
+                "Lead Score": st.column_config.TextColumn("🎯 Priority", width="small"),
+                "Opportunity": st.column_config.TextColumn("🔍 Opportunity", width="medium"),
+                "Suggested Service": st.column_config.TextColumn("💼 Service", width="medium"),
+                "Tailored Pitch Angle": st.column_config.TextColumn("📢 Cold Pitch Hook", width="large"),
+                "Audit Flaws": st.column_config.TextColumn("⚠️ Top Flaws", width="medium"),
+                "Address": st.column_config.TextColumn("📍 Address", width="medium"),
+                "Website": st.column_config.LinkColumn("🌐 Website", width="medium"),
+                "Maps Link": st.column_config.LinkColumn("🗺️ Maps", width="small"),
+                "Category": st.column_config.TextColumn("Category", width="small"),
+                "Source": st.column_config.TextColumn("Source", width="small")
             },
             hide_index=True
         )
